@@ -9,9 +9,8 @@ public class Game1 : Game
 {
     private GraphicsDeviceManager _graphics;
     private SpriteBatch _spriteBatch;
-    private Texture2D _logo;
-    private TextureRegion _slime;
-    private TextureRegion _bat;
+    private AnimatedSprite _slime;
+    private AnimatedSprite _bat;
 
     public Game1()
     {
@@ -33,8 +32,10 @@ public class Game1 : Game
         
         TextureAtlas atlas = TextureAtlas.FromFile(Content, "images/atlas-definition.xml");
         
-        _slime = atlas.GetRegion("slime");
-        _bat = atlas.GetRegion("bat");
+        _slime = atlas.CreateAnimatedSprite("slime-animation");
+        _slime.Scale = new Vector2(4.0f, 4.0f);
+        _bat = atlas.CreateAnimatedSprite("bat-animation");
+        _bat.Scale = new Vector2(4.0f, 4.0f);
     }
 
     protected override void Update(GameTime gameTime)
@@ -42,7 +43,8 @@ public class Game1 : Game
         if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             Exit();
 
-        // TODO: Add your update logic here
+        _slime.Update(gameTime);
+        _bat.Update(gameTime);
 
         base.Update(gameTime);
     }
@@ -53,9 +55,9 @@ public class Game1 : Game
 
         _spriteBatch.Begin(samplerState: SamplerState.PointClamp);
         
-        _slime.Draw(_spriteBatch, Vector2.Zero, Color.White, 0.0f, Vector2.One, 4.0f, SpriteEffects.None, 0.0f);
+        _slime.Draw(_spriteBatch, Vector2.Zero);
         
-        _bat.Draw(_spriteBatch, new Vector2(_slime.Width * 4.0f + 10, 0), Color.White, 0.0f, Vector2.One, 4.0f, SpriteEffects.None, 1.0f);
+        _bat.Draw(_spriteBatch, new Vector2(_slime.Width + 10, 0));
         
         _spriteBatch.End();
         
