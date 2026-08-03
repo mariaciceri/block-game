@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 
-namespace PuzzleGame.Graphics;
+namespace PuzzleGame.Utils.Graphics;
 
 public readonly struct Circle : IEquatable<Circle> 
 {

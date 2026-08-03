@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework.Input;
 
-namespace PuzzleGame.Graphics.Input;
+namespace PuzzleGame.Utils.Graphics.Input;
 
 public class KeyboardInfo
 {

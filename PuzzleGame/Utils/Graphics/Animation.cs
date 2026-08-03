@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace PuzzleGame.Graphics;
+namespace PuzzleGame.Utils.Graphics;
 
 public class Animation 
 {

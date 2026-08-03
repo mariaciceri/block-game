@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace PuzzleGame.Graphics;
+namespace PuzzleGame.Utils.Graphics;
 
 public class TextureAtlas
 {
