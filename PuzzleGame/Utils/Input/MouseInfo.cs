@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
-namespace PuzzleGame.Utils.Graphics.Input;
+namespace PuzzleGame.Utils.Input;
 
 public class MouseInfo 
 {

@@ -1,4 +1,4 @@
-namespace PuzzleGame.Utils.Graphics.Input;
+namespace PuzzleGame.Utils.Input;
 
 public enum MouseButton
 {

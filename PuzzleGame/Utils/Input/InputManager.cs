@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace PuzzleGame.Utils.Graphics.Input;
+namespace PuzzleGame.Utils.Input;
 
 public class InputManager
 {
