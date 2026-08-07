@@ -15,7 +15,7 @@ public class AudioController : IDisposable
     
     public bool IsMuted { get; private set; }
 
-    public float Songvolume
+    public float SongVolume
     {
         get
         {
