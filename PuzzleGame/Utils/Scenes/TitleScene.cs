@@ -55,9 +55,9 @@ public class TitleScene : Scene
     public override void LoadContent()
     {
         //Loading the cached font.
-        _font = Core.Content.Load<SpriteFont>("fonts/04B_30");
+        _font = Core.Content.Load<SpriteFont>("font/MyFont");
         
-        _font5x = Content.Load<SpriteFont>("fonts/04B_30_5x");
+        _font5x = Content.Load<SpriteFont>("font/TitleFont");
     }
 
     public override void Update(GameTime gameTime)
