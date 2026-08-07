@@ -88,7 +88,7 @@ public class GameScene : Scene
         _bounceSoundEffect = Content.Load<SoundEffect>("audio/bounce");
         _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
 
-        _font = Core.Content.Load<SpriteFont>("fonts/04B_30");
+        _font = Core.Content.Load<SpriteFont>("font/MyFont");
     }
 
     public override void Update(GameTime gameTime)
@@ -257,6 +257,34 @@ public class GameScene : Scene
             Core.Audio.SongVolume -= 0.1f;
             Core.Audio.SoundEffectVolume -= 0.1f;
         }
+    }
+
+    public override void Draw(GameTime gameTime)
+    {
+        // Clear the back buffer.
+        Core.GraphicsDevice.Clear(Color.CornflowerBlue);
+
+        Core.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+        
+        _tilemap.Draw(Core.SpriteBatch);
+
+        _slime.Draw(Core.SpriteBatch, _slimePosition);
+
+        _bat.Draw(Core.SpriteBatch, _batPosition);
+
+        Core.SpriteBatch.DrawString(
+            _font,
+            $"Score: {_score}",
+            _scoreTextPosition,
+            Color.White,
+            0.0f,
+            _scoreTextOrigin,
+            1.0f,
+            SpriteEffects.None,
+            0.0f
+        );
+
+        Core.SpriteBatch.End();
     }
 
 }
