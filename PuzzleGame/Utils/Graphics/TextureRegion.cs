@@ -13,6 +13,19 @@ public class TextureRegion
 
     public int Height => SourceRectangle.Height;
     
+    /// Gets the top normalized texture coordinate of this region.
+    public float TopTextureCoordinate => SourceRectangle.Top / (float)Texture.Height;
+    
+    /// Gets the bottom normalized texture coordinate of this region.
+    public float BottomTextureCoordinate => SourceRectangle.Bottom / (float)Texture.Height;
+    
+    ///  Gets the left normalized texture coordinate of this region.
+    public float LeftTextureCoordinate => SourceRectangle.Left / (float)Texture.Width;
+    
+    /// Gets the right normalized texture coordinate of this region.
+    public float RightTextureCoordinate => SourceRectangle.Right / (float)Texture.Width;
+
+    
     public TextureRegion() {}
 
     public TextureRegion(Texture2D texture, int x, int y, int width, int height)
