@@ -3,34 +3,35 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using PuzzleGame.Utils;
+using PuzzleGame.Utils.UI;
 using PuzzleGame.Utils.Graphics;
 using PuzzleGame.Utils.Input;
 using PuzzleGame.Utils.Scenes;
+using Gum.Managers;
+using Gum.DataTypes;
+using Gum.Wireframe;
+using MonoGameGum;
+using Gum.Forms.Controls;
+using MonoGameGum.GueDeriving;
 
 namespace PuzzleGame.Utils.Scenes;
 
 public class GameScene : Scene
 {
     private AnimatedSprite _slime;
-
     private AnimatedSprite _bat;
-
     private Vector2 _slimePosition;
-
-    private const float MovementSpeed = 5.0f;
-
     private Vector2 _batPosition;
-
     private Vector2 _batVelocity;
     
+    private const float MovementSpeed = 5.0f;
+    
     private Tilemap _tilemap;
-
     private Rectangle _roomBounds;
 
     private SoundEffect _bounceSoundEffect;
-
     private SoundEffect _collectSoundEffect;
+    private SoundEffect _uiSoundEffect;
 
     private SpriteFont _font;
 
@@ -39,6 +40,12 @@ public class GameScene : Scene
     private Vector2 _scoreTextPosition;
     
     private Vector2 _scoreTextOrigin;
+
+    private AnimatedButton _resumeButton;
+    
+    private Panel _pausePanel;
+
+    private TextureAtlas _atlas;
 
     public override void Initialize()
     {
@@ -69,16 +76,18 @@ public class GameScene : Scene
         _scoreTextOrigin = new Vector2(0, scoreTextYOrigin);
         
         AssignRandomBatVelocity();
+        
+        InitializeUI();
     }
 
     public override void LoadContent()
     {
-        TextureAtlas atlas = TextureAtlas.FromFile(Core.Content, "images/atlas-definition.xml");
+        _atlas = TextureAtlas.FromFile(Core.Content, "images/atlas-definition.xml");
 
-        _slime = atlas.CreateAnimatedSprite("slime-animation");
+        _slime = _atlas.CreateAnimatedSprite("slime-animation");
         _slime.Scale = new Vector2(4.0f, 4.0f);
 
-        _bat = atlas.CreateAnimatedSprite("bat-animation");
+        _bat = _atlas.CreateAnimatedSprite("bat-animation");
         _bat.Scale = new Vector2(4.0f, 4.0f);
 
         _tilemap = Tilemap.FromFile(Content, "images/tilemap-definition.xml");
@@ -89,10 +98,19 @@ public class GameScene : Scene
         _collectSoundEffect = Content.Load<SoundEffect>("audio/collect");
 
         _font = Core.Content.Load<SpriteFont>("font/MyFont");
+
+        _uiSoundEffect = Core.Content.Load<SoundEffect>("audio/ui");
     }
 
     public override void Update(GameTime gameTime)
     {
+        GumService.Default.Update(gameTime);
+
+        if (_pausePanel.IsVisible)
+        {
+            return;
+        }
+        
         _slime.Update(gameTime);
 
         _bat.Update(gameTime);
@@ -212,7 +230,8 @@ public class GameScene : Scene
         // If the escape key is pressed, return to the title screen.
         if (Core.Input.Keyboard.WasKeyJustPressed(Keys.Escape))
         {
-            Core.ChangeScene(new TitleScene());
+            PauseGame();
+            return;
         }
 
         float speed = MovementSpeed;
@@ -285,6 +304,93 @@ public class GameScene : Scene
         );
 
         Core.SpriteBatch.End();
+        
+        GumService.Default.Draw();
+    }
+
+    private void PauseGame()
+    {
+        // Make the pause panel UI element visible.
+        _pausePanel.IsVisible = true;
+
+        // Set the resume button to have focus
+        _resumeButton.IsFocused = true;
+    }
+    
+    private void CreatePausePanel()
+    {
+        _pausePanel = new Panel();
+        _pausePanel.Anchor(Anchor.Center);
+        _pausePanel.WidthUnits = DimensionUnitType.Absolute;
+        _pausePanel.HeightUnits = DimensionUnitType.Absolute;
+        _pausePanel.Height = 70;
+        _pausePanel.Width = 264;
+        _pausePanel.IsVisible = false;
+        _pausePanel.AddToRoot();
+
+        TextureRegion backgroundRegion = _atlas.GetRegion("panel-background");
+
+        NineSliceRuntime background = new NineSliceRuntime();
+        background.Dock(Dock.Fill);
+        background.Texture = backgroundRegion.Texture;
+        background.TextureAddress = TextureAddress.Custom;
+        background.TextureHeight = backgroundRegion.Height;
+        background.TextureLeft = backgroundRegion.SourceRectangle.Left;
+        background.TextureTop = backgroundRegion.SourceRectangle.Top;
+        background.TextureWidth = backgroundRegion.Width;
+        _pausePanel.AddChild(background);
+
+        TextRuntime textInstance = new TextRuntime();
+        textInstance.Text = "PAUSED";
+        textInstance.CustomFontFile = @"font/MyFont.fnt";
+        textInstance.UseCustomFont = true;
+        textInstance.FontScale = 0.5f;
+        textInstance.X = 10f;
+        textInstance.Y = 10f;
+        _pausePanel.AddChild(textInstance);
+
+        _resumeButton = new AnimatedButton(_atlas);
+        _resumeButton.Text = "RESUME";
+        _resumeButton.Anchor(Anchor.BottomLeft);
+        _resumeButton.X = 9f;
+        _resumeButton.Y = -9f;
+        _resumeButton.Click += HandleResumeButtonClicked;
+        _pausePanel.AddChild(_resumeButton);
+
+        AnimatedButton quitButton = new AnimatedButton(_atlas);
+        quitButton.Text = "QUIT";
+        quitButton.Anchor(Anchor.BottomRight);
+        quitButton.X = -9f;
+        quitButton.Y = -9f;
+        quitButton.Click += HandleQuitButtonClicked;
+
+        _pausePanel.AddChild(quitButton);
+    }
+
+
+    private void HandleResumeButtonClicked(object sender, EventArgs e)
+    {
+        // A UI interaction occurred, play the sound effect
+        Core.Audio.PlaySoundEffect(_uiSoundEffect);
+
+        // Make the pause panel invisible to resume the game.
+        _pausePanel.IsVisible = false;
+    }
+
+    private void HandleQuitButtonClicked(object sender, EventArgs e)
+    {
+        // A UI interaction occurred, play the sound effect
+        Core.Audio.PlaySoundEffect(_uiSoundEffect);
+
+        // Go back to the title scene.
+        Core.ChangeScene(new TitleScene());
+    }
+
+    private void InitializeUI()
+    {
+        GumService.Default.Root.Children.Clear();
+
+        CreatePausePanel();
     }
 
 }
