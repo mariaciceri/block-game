@@ -14,8 +14,7 @@ namespace PuzzleGame.Utils.Scenes;
 
 public class TitleScene : Scene
 {
-    private const string PuzzleText = "Puzzle Game";
-    private const string SlimeText = "Slime";
+    private const string PuzzleText = "Maze\n  Craze";
     
     private SpriteFont _font5x;
     
@@ -44,24 +43,24 @@ public class TitleScene : Scene
         base.Initialize();
         
         Core.ExitOnEscape = true;
+        
+        _backgroundOffset = Vector2.Zero;
+        _backgroundDestination = Core.GraphicsDevice.PresentationParameters.Bounds;
 
         // Set the position and origin for the Dungeon text.
         Vector2 size = _font5x.MeasureString(PuzzleText);
-        _dungeonTextPos = new Vector2(640, 100);
+        _dungeonTextPos = new Vector2(
+            _backgroundDestination.Width * 0.5f,
+            _backgroundDestination.Height * 0.3f
+            );
         _dungeonTextOrigin = size * 0.5f;
-
-        // Set the position and origin for the Slime text.
-        size = _font5x.MeasureString(SlimeText);
-        _slimeTextPos = new Vector2(757, 207);
-        _slimeTextOrigin = size * 0.5f;
 
         // Set the position and origin for the press enter text.
         //size = _font.MeasureString(PressEnterText);
         //_pressEnterPos = new Vector2(640, 620);
         //_pressEnterOrigin = size * 0.5f;
 
-        _backgroundOffset = Vector2.Zero;
-        _backgroundDestination = Core.GraphicsDevice.PresentationParameters.Bounds;
+        
         
         InitializeUI();
     }
@@ -139,31 +138,6 @@ public class TitleScene : Scene
                 SpriteEffects.None, 
                 1.0f);
 
-            // Draw the Slime text slightly offset from it is original position and
-            // with a transparent color to give it a drop shadow
-            Core.SpriteBatch.DrawString(
-                _font5x,
-                SlimeText, 
-                _slimeTextPos + new Vector2(10, 10),
-                dropShadowColor,
-                0.0f,
-                _slimeTextOrigin, 
-                1.0f,
-                SpriteEffects.None,
-                1.0f);
-
-            // Draw the Slime text on top of that at its original position
-            Core.SpriteBatch.DrawString(
-                _font5x,
-                SlimeText,
-                _slimeTextPos,
-                Color.White,
-                0.0f,
-                _slimeTextOrigin, 
-                1.0f,
-                SpriteEffects.None,
-                1.0f);
-
             Core.SpriteBatch.End();
         }
         
@@ -176,19 +150,19 @@ public class TitleScene : Scene
         _titleScreenButtonsPanel = new Panel();
         _titleScreenButtonsPanel.Dock(Gum.Wireframe.Dock.Fill);
         _titleScreenButtonsPanel.AddToRoot();
+        float buttonSpacing = _backgroundDestination.Height * 0.02f;
+        float bottomOffset = _backgroundDestination.Height * 0.2f;
         
         AnimatedButton startButton = new AnimatedButton(_atlas);
-        startButton.Anchor(Gum.Wireframe.Anchor.BottomLeft);
-        startButton.X = 50;
-        startButton.Y = -12;
+        startButton.Anchor(Gum.Wireframe.Anchor.CenterHorizontally);
+        startButton.Y = (bottomOffset + buttonSpacing);
         startButton.Text = "Start";
         startButton.Click += HandleStartClicked;
         _titleScreenButtonsPanel.AddChild(startButton);
         
         _optionsButton = new AnimatedButton(_atlas);
-        _optionsButton.Anchor(Gum.Wireframe.Anchor.BottomRight);
-        _optionsButton.X = -50;
-        _optionsButton.Y = -12;
+        _optionsButton.Anchor(Gum.Wireframe.Anchor.CenterHorizontally);
+        _optionsButton.Y = bottomOffset;
         _optionsButton.Text = "Options";
         _optionsButton.Click += HandleOptionsClicked;
         _titleScreenButtonsPanel.AddChild(_optionsButton);
