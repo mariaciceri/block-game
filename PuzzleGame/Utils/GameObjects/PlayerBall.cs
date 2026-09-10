@@ -1,9 +1,11 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Numerics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using PuzzleGame.Utils.Graphics;
+using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace PuzzleGame.Utils.GameObjects;
 
@@ -11,7 +13,15 @@ public class PlayerBall
 {
     private Rectangle _player;
     private bool _isDragging;
+    private bool _wasDragging;
     private Vector2 _dragOffset;
+
+    private enum DragAxis {None, Horizontal, Vertical}
+    private DragAxis _movementDirection;
+    private Vector2 _dragStartMousePosition;
+    private const float AxisLockThreshold = 3f;
+    
+    public int Moves { get; set; }
     
     private Rectangle _roomBounds;
     
@@ -49,24 +59,49 @@ public class PlayerBall
     {
         _isDragging = true;
         _dragOffset = new Vector2(mousePosition.X - _player.X, mousePosition.Y - _player.Y);
+        _movementDirection = DragAxis.None;
+        _dragStartMousePosition = mousePosition;
+        _wasDragging = false;
+
     }
 
     private void ContinueDrag(Vector2 mousePosition)
     {
-        float playerPositionX = mousePosition.X - _dragOffset.X;
-        float playerPositionY = mousePosition.Y - _dragOffset.Y;
-
-        int newPositionX = Math.Clamp((int)playerPositionX, _roomBounds.Left, _roomBounds.Right - _player.Width);
-        int newPositionY = Math.Clamp((int)playerPositionY, _roomBounds.Top, _roomBounds.Bottom - _player.Height);
-        
         bool collisionDetected = CollisionCheck(_player);
+        _wasDragging = true;
 
-        if (!collisionDetected)
+        if (_movementDirection == DragAxis.None)
         {
-            _player.Location = new Point(newPositionX, newPositionY);
+            float deltaX = mousePosition.X - _dragStartMousePosition.X;
+            float deltaY = mousePosition.Y - _dragStartMousePosition.Y;
+
+            if (Math.Abs(deltaX) > AxisLockThreshold || Math.Abs(deltaY) > AxisLockThreshold)
+            {
+                _movementDirection = Math.Abs(deltaX) > Math.Abs(deltaY)
+                    ? DragAxis.Horizontal
+                    : DragAxis.Vertical;
+            }
         }
-        
-        // maybe clamp to valid bounds, check collisions with blocks, etc.
+        else if (_movementDirection == DragAxis.Horizontal)
+        {
+            float playerPositionX = mousePosition.X - _dragOffset.X;
+            int newPositionX = Math.Clamp((int)playerPositionX, _roomBounds.Left, _roomBounds.Right - _player.Width);
+
+            if (!collisionDetected)
+            {
+                _player.Location = new Point(newPositionX, _player.Y);
+            }
+        }
+        else if (_movementDirection == DragAxis.Vertical)
+        {
+            float playerPositionY = mousePosition.Y - _dragOffset.Y;
+            int newPositionY = Math.Clamp((int)playerPositionY, _roomBounds.Top, _roomBounds.Bottom - _player.Height);
+            
+            if (!collisionDetected)
+            {
+                _player.Location = new Point(_player.X, newPositionY);
+            }
+        }
     }
 
     private bool CollisionCheck(Rectangle player)
@@ -77,8 +112,28 @@ public class PlayerBall
 
     private void EndDrag()
     {
+        float moduloX = _player.X / (float)_player.Width;
+        float moduloY = _player.Y / (float)_player.Height;
+
+        if (_movementDirection == DragAxis.Horizontal)
+        {
+            int newX = (int)Math.Round(moduloX) * _player.Width;
+            _player.Location = new Point(newX, _player.Y);
+        }
+        else if (_movementDirection == DragAxis.Vertical)
+        {
+            int newY = (int)Math.Round(moduloY) * _player.Height;
+            _player.Location = new Point(_player.X, newY);
+        }
+        
         _isDragging = false;
-        //snap player into nearest grid tile based on current position.
+        _movementDirection = DragAxis.None;
+        if (!_isDragging && _wasDragging)
+        {
+            Moves += 1;
+        }
+
+        _wasDragging = false;
     }
 
     public void Update(GameTime gameTime)
