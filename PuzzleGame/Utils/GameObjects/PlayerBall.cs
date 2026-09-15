@@ -24,6 +24,9 @@ public class PlayerBall
     public int Moves { get; private set; }
     
     private Rectangle _roomBounds;
+    private GridConverter _gridConverter;
+
+    private Point _playerGridPosition;
     
     private Texture2D _pixelTextureTest;
 
@@ -31,6 +34,8 @@ public class PlayerBall
     {
         _player = new Rectangle(x, y, width, height);
         _roomBounds = roomBounds;
+
+        _playerGridPosition = GridPositionConverter(ConversionType.ToCellPosition);
     }
     
     private void HandleInput()
@@ -57,7 +62,10 @@ public class PlayerBall
 
     private void OnStartMoving(Vector2 mousePosition)
     {
-        _dragOffset = new Vector2(mousePosition.X - _player.X, mousePosition.Y - _player.Y);
+        _dragOffset = new Vector2(
+            mousePosition.X - _player.X,
+            mousePosition.Y - _player.Y
+            );
         _isDragging = true;
         _movementDirection = DragAxis.None;
         _dragStartMousePosition = mousePosition;
@@ -82,17 +90,21 @@ public class PlayerBall
         else if (_movementDirection == DragAxis.Horizontal)
         {
             float playerPositionX = mousePosition.X - _dragOffset.X;
-            int newPositionX = Math.Clamp((int)playerPositionX, _roomBounds.Left, _roomBounds.Right - _player.Width);
+            int newPositionX = Math.Clamp(
+                (int)playerPositionX, _roomBounds.Left, _roomBounds.Right - _player.Width
+                );
 
             if (!collisionDetected)
             {
-                _player.Location = new Point(newPositionX, _player.Y);
+                _player.Location = new Point(newPositionX , _player.Y);
             }
         }
         else if (_movementDirection == DragAxis.Vertical)
         {
             float playerPositionY = mousePosition.Y - _dragOffset.Y;
-            int newPositionY = Math.Clamp((int)playerPositionY, _roomBounds.Top, _roomBounds.Bottom - _player.Height);
+            int newPositionY = Math.Clamp(
+                (int)playerPositionY, _roomBounds.Top, _roomBounds.Bottom - _player.Height
+                );
             
             if (!collisionDetected)
             {
@@ -109,25 +121,45 @@ public class PlayerBall
 
     private void OnStoppedMoving()
     {
-        float moduloX = _player.X / (float)_player.Width;
-        float moduloY = _player.Y / (float)_player.Height;
-        Point oldPlayerLocation = _player.Location;
-
+        Point oldPlayerLocation = _playerGridPosition;
+        Point newPlayerLocation = GridPositionConverter(ConversionType.ToCellPosition); //(1,0)
+            
         if (_movementDirection == DragAxis.Horizontal)
         {
-            int newX = (int)Math.Round(moduloX) * _player.Width;
+            int newX = (newPlayerLocation.Y + 1) * _player.Width;
             _player.Location = new Point(newX, _player.Y);
         }
         else if (_movementDirection == DragAxis.Vertical)
         {
-            int newY = (int)Math.Round(moduloY) * _player.Height;
+            int newY = (newPlayerLocation.X + 1) * _player.Height;
             _player.Location = new Point(_player.X, newY);
         }
         
+        _playerGridPosition = newPlayerLocation;
         _isDragging = false;
-        if (!oldPlayerLocation.Equals(_player.Location))
+        if (!oldPlayerLocation.Equals(newPlayerLocation))
         {
             Moves++;
+        }
+    }
+
+    private enum ConversionType
+    {
+        ToCellPosition,
+        ToPixelPosition
+    }
+
+    private Point GridPositionConverter(ConversionType typeOfConversion)
+    {
+        _gridConverter = new GridConverter(new Point(_player.X, _player.Y), _player.Width);
+        switch (typeOfConversion)
+        {
+            case ConversionType.ToCellPosition:
+                return _gridConverter.PixelToGrid();
+            case ConversionType.ToPixelPosition:
+                return _gridConverter.GridToPixel();
+            default:
+                return new Point(0, 0);
         }
     }
 
@@ -138,7 +170,6 @@ public class PlayerBall
 
     public void Draw()
     {
-        //must make it a boll or something else..maybe an image or something trying to scape?
         _pixelTextureTest = new Texture2D(Core.GraphicsDevice, 1, 1);
         _pixelTextureTest.SetData(new[] { Color.White });
         
