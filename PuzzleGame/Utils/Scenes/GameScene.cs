@@ -21,10 +21,9 @@ public class GameScene : Scene
         Paused,
         GameOver
     }
-
-    private Rectangle obstacle;
+    
     private PlayerBall _player;
-    private Rectangle goal;
+    private LevelDesign _level;
 
     private Texture2D _pixelTextureTest;
     
@@ -96,10 +95,7 @@ public class GameScene : Scene
             (int)(_tilemap.TileHeight),
             _roomBounds
             );
-        goal = new Rectangle((int)(_tilemap.Columns * _tilemap.TileWidth) - (96*2),
-            (int)(_tilemap.Rows * _tilemap.TileHeight) - (96*2),
-            96,
-            96);
+        _level = new LevelDesign();
         
         //Slime at the center
         Vector2 slimePos = new Vector2();
@@ -118,9 +114,6 @@ public class GameScene : Scene
         
         _tilemap = Tilemap.FromFile(Content, "images/tilemap-definition.xml");
         _tilemap.Scale = new Vector2(1.5f, 1.5f);
-        
-        _pixelTextureTest = new Texture2D(Core.GraphicsDevice, 1, 1);
-        _pixelTextureTest.SetData(new[] { Color.White });
         
         SoundEffect bounceSoundEffect = Content.Load<SoundEffect>("audio/bounce");
         
@@ -151,6 +144,9 @@ public class GameScene : Scene
         //_bat.Update(gameTime);
         
         _player.Update(gameTime);
+        //_level.Update(gameTime);
+        _ui.UpdateScoreText(_player.Moves);
+        //calculate final points. will be displayed in a level completed menu though
         
         //CollisionChecks();
     }
@@ -184,8 +180,6 @@ public class GameScene : Scene
         
         _tilemap.Draw(Core.SpriteBatch);
 
-        Core.SpriteBatch.Draw(_pixelTextureTest, goal, Color.DarkRed);
-        
         _player.Draw();
         
         Core.SpriteBatch.End();
