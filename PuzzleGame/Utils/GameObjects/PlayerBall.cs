@@ -12,8 +12,8 @@ namespace PuzzleGame.Utils.GameObjects;
 public class PlayerBall
 {
     private Rectangle _player;
+    private Rectangle _goal;
     private bool _isDragging;
-    private bool _wasDragging;
     private Vector2 _dragOffset;
 
     private enum DragAxis {None, Horizontal, Vertical}
@@ -21,7 +21,7 @@ public class PlayerBall
     private Vector2 _dragStartMousePosition;
     private const float AxisLockThreshold = 3f;
     
-    public int Moves { get; set; }
+    public int Moves { get; private set; }
     
     private Rectangle _roomBounds;
     
@@ -39,36 +39,33 @@ public class PlayerBall
         //when release the click, it must fall into place to the nearest grid space
         
         Vector2 mousePosition = GameController.MousePosition();
-        bool isHoldingClick = GameController.HoldItem();
+        bool isHoldingClick = GameController.MovePlayer();
 
         if (isHoldingClick && !_isDragging && _player.Contains(mousePosition))
         {
-            StartDrag(mousePosition);
+            OnStartMoving(mousePosition);
         }
         else if (isHoldingClick && _isDragging)
         {
-            ContinueDrag(mousePosition);
+            OnMovingPlayer(mousePosition);
         }
-        else if (!isHoldingClick)
+        else if (GameController.WasPlayerJustReleased() && _isDragging)
         {
-            EndDrag();
+            OnStoppedMoving();
         }
     }
 
-    private void StartDrag(Vector2 mousePosition)
+    private void OnStartMoving(Vector2 mousePosition)
     {
-        _isDragging = true;
         _dragOffset = new Vector2(mousePosition.X - _player.X, mousePosition.Y - _player.Y);
+        _isDragging = true;
         _movementDirection = DragAxis.None;
         _dragStartMousePosition = mousePosition;
-        _wasDragging = false;
-
     }
 
-    private void ContinueDrag(Vector2 mousePosition)
+    private void OnMovingPlayer(Vector2 mousePosition)
     {
         bool collisionDetected = CollisionCheck(_player);
-        _wasDragging = true;
 
         if (_movementDirection == DragAxis.None)
         {
@@ -110,10 +107,11 @@ public class PlayerBall
         return false;
     }
 
-    private void EndDrag()
+    private void OnStoppedMoving()
     {
         float moduloX = _player.X / (float)_player.Width;
         float moduloY = _player.Y / (float)_player.Height;
+        Point oldPlayerLocation = _player.Location;
 
         if (_movementDirection == DragAxis.Horizontal)
         {
@@ -127,13 +125,10 @@ public class PlayerBall
         }
         
         _isDragging = false;
-        _movementDirection = DragAxis.None;
-        if (!_isDragging && _wasDragging)
+        if (!oldPlayerLocation.Equals(_player.Location))
         {
-            Moves += 1;
+            Moves++;
         }
-
-        _wasDragging = false;
     }
 
     public void Update(GameTime gameTime)
@@ -148,5 +143,9 @@ public class PlayerBall
         _pixelTextureTest.SetData(new[] { Color.White });
         
         Core.SpriteBatch.Draw(_pixelTextureTest, _player, Color.Green);
+        
+        _goal = new Rectangle(480, 480, 96, 96);
+        
+        Core.SpriteBatch.Draw(_pixelTextureTest, _goal, Color.Black);
     }
 }
