@@ -13,7 +13,7 @@ public static class GameController
 
     private static MouseInfo MouseMove => Core.Input.Mouse;
 
-    public static bool HoldItem()
+    public static bool MovePlayer()
     {
         return MouseMove.IsButtonDown(MouseButton.Left);
     }
@@ -24,6 +24,11 @@ public static class GameController
         int Y = MouseMove.Y;
         
         return new Vector2(X, Y);
+    }
+
+    public static bool WasPlayerJustReleased()
+    {
+        return MouseMove.WasButtonJustReleased(MouseButton.Left);
     }
     
     public static bool MoveUp()
