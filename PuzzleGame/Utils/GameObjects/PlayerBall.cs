@@ -22,20 +22,32 @@ public class PlayerBall
     private const float AxisLockThreshold = 3f;
     
     public int Moves { get; private set; }
+    public bool IsLevelCleared;
     
     private Rectangle _roomBounds;
     private GridConverter _gridConverter;
 
     private Point _playerGridPosition;
+    private Point _goalGridPosition;
     
     private Texture2D _pixelTextureTest;
 
+    //this must be initialilzed with player position, goal position and obstacles
     public PlayerBall(int x, int y, int width, int height, Rectangle roomBounds)
     {
         _player = new Rectangle(x, y, width, height);
         _roomBounds = roomBounds;
 
-        _playerGridPosition = GridPositionConverter(ConversionType.ToCellPosition);
+        _playerGridPosition = GridPositionConverter(
+            _player.X,
+            _player.Y,
+            ConversionType.ToCellPosition
+            );
+        _goal = new Rectangle(480, 480, 96, 96);
+        _goalGridPosition = GridPositionConverter(
+            480, 480,
+            ConversionType.ToCellPosition
+            );
     }
     
     private void HandleInput()
@@ -122,7 +134,11 @@ public class PlayerBall
     private void OnStoppedMoving()
     {
         Point oldPlayerLocation = _playerGridPosition;
-        Point newPlayerLocation = GridPositionConverter(ConversionType.ToCellPosition); //(1,0)
+        Point newPlayerLocation = GridPositionConverter(
+            _player.X,
+            _player.Y,
+            ConversionType.ToCellPosition
+            ); //(1,0)
             
         if (_movementDirection == DragAxis.Horizontal)
         {
@@ -137,6 +153,7 @@ public class PlayerBall
         
         _playerGridPosition = newPlayerLocation;
         _isDragging = false;
+        LevelClearedCheck();
         if (!oldPlayerLocation.Equals(newPlayerLocation))
         {
             Moves++;
@@ -149,9 +166,11 @@ public class PlayerBall
         ToPixelPosition
     }
 
-    private Point GridPositionConverter(ConversionType typeOfConversion)
+    //This will give the position of the first cell, so if the object passed
+    // is a rectangle, the return position will be the left/top most cell
+    private Point GridPositionConverter(int x, int y, ConversionType typeOfConversion)
     {
-        _gridConverter = new GridConverter(new Point(_player.X, _player.Y), _player.Width);
+        _gridConverter = new GridConverter(new Point(x, y), _player.Width);
         switch (typeOfConversion)
         {
             case ConversionType.ToCellPosition:
@@ -168,14 +187,22 @@ public class PlayerBall
         HandleInput();
     }
 
+    private bool LevelClearedCheck()
+    {
+        if (_playerGridPosition == _goalGridPosition)
+        {
+            IsLevelCleared = true;
+        }
+
+        return false;
+    }
+
     public void Draw()
     {
         _pixelTextureTest = new Texture2D(Core.GraphicsDevice, 1, 1);
         _pixelTextureTest.SetData(new[] { Color.White });
         
         Core.SpriteBatch.Draw(_pixelTextureTest, _player, Color.Green);
-        
-        _goal = new Rectangle(480, 480, 96, 96);
         
         Core.SpriteBatch.Draw(_pixelTextureTest, _goal, Color.Black);
     }
