@@ -19,7 +19,7 @@ public class GameScene : Scene
     {
         Playing,
         Paused,
-        GameOver
+        LevelCleared
     }
     
     private PlayerBall _player;
@@ -88,22 +88,10 @@ public class GameScene : Scene
     private void InitializeNewGame()
     {
         //currently passing the position manually - a function will give us these
-        _player = new PlayerBall(
-            96,
-            96,
-            (int)(_tilemap.TileWidth),
-            (int)(_tilemap.TileHeight),
-            _roomBounds
-            );
-        _level = new LevelDesign();
+        _level = new LevelDesign(0);
+        _player = new PlayerBall(_roomBounds);
+        _player.Initialize(_level, (int)_tilemap.TileWidth);
         
-        //Slime at the center
-        Vector2 slimePos = new Vector2();
-        slimePos.X = (_tilemap.Columns / 2) * _tilemap.TileWidth;
-        slimePos.Y = (_tilemap.Rows / 2) * _tilemap.TileHeight; 
-        
-        //_slime.Initialize(slimePos, _tilemap.TileWidth);
-
         _score = 0;
         _state = GameState.Playing;
     }
@@ -139,9 +127,6 @@ public class GameScene : Scene
         {
             return;
         }
-
-        //_slime.Update(gameTime);
-        //_bat.Update(gameTime);
         
         _player.Update(gameTime);
         //_level.Update(gameTime);
