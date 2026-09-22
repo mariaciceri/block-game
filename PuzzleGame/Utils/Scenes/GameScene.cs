@@ -113,7 +113,7 @@ public class GameScene : Scene
         // Ensure the UI is always updated.
         _ui.Update(gameTime);
         
-        if (_state == GameState.GameOver)
+        if (_state == GameState.LevelCleared)
         {
             return;
         }
@@ -129,7 +129,11 @@ public class GameScene : Scene
         }
         
         _player.Update(gameTime);
-        //_level.Update(gameTime);
+        if (_player.IsLevelCleared)
+        {
+            _state = GameState.LevelCleared;
+            LevelCleared();
+        }
         _ui.UpdateScoreText(_player.Moves);
         //calculate final points. will be displayed in a level completed menu though
         
@@ -152,10 +156,10 @@ public class GameScene : Scene
         }
     }
 
-    private void GameOver()
+    private void LevelCleared()
     {
-        _ui.ShowGameOverPanel();
-        _state = GameState.GameOver;
+        _ui.ShowLevelClearedPanel();
+        _state = GameState.LevelCleared;
     }
 
     public override void Draw(GameTime gameTime)
