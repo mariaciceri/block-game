@@ -32,10 +32,47 @@ public class PlayerBall
     
     private Texture2D _pixelTextureTest;
 
-    //this must be initialilzed with player position, goal position and obstacles
-    public PlayerBall(int x, int y, int width, int height, Rectangle roomBounds)
+    public void Initialize(LevelDesign levelDesign, int tileSize)
     {
-        _player = new Rectangle(x, y, width, height);
+        _objects = new List<GameObject>();
+        
+        _player = new GameObject(
+            GameObjectType.Player,
+            new Rectangle(
+                (int)levelDesign.PlayerInitialPosition.X, 
+                (int)levelDesign.PlayerInitialPosition.Y,
+                tileSize, 
+                tileSize
+                )
+            );
+        _objects.Add(_player);
+        
+        _goal = new GameObject(
+            GameObjectType.Goal, 
+            new Rectangle(
+                (int)levelDesign.GoalPosition.X, 
+                (int)levelDesign.GoalPosition.Y, 
+                tileSize, 
+                tileSize)
+            );
+        _objects.Add(_goal);
+        
+        foreach (Rectangle obstacle in levelDesign.Obstacles)
+        {
+            _objects.Add(new GameObject(
+                GameObjectType.Obstacle,
+                obstacle
+            ));
+        }
+
+        _goalGridPosition = ConvertGridPosition(
+            480, 480,
+            ConversionType.ToIndexPosition
+        );
+    }
+
+    public PlayerBall(Rectangle roomBounds)
+    {
         _roomBounds = roomBounds;
 
         _playerGridPosition = GridPositionConverter(
