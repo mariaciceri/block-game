@@ -75,17 +75,6 @@ public class PlayerBall
     public PlayerBall(Rectangle roomBounds)
     {
         _roomBounds = roomBounds;
-
-        _playerGridPosition = GridPositionConverter(
-            _player.X,
-            _player.Y,
-            ConversionType.ToCellPosition
-            );
-        _goal = new Rectangle(480, 480, 96, 96);
-        _goalGridPosition = GridPositionConverter(
-            480, 480,
-            ConversionType.ToCellPosition
-            );
     }
     
     private void HandleInput()
@@ -139,14 +128,16 @@ public class PlayerBall
     
     private void OnMovingPlayer(Vector2 mousePosition)
     {
-        bool collisionDetected = CollisionCheck(_player);
-
+        bool collisionDetected = CollisionCheck(_draggingObject);
+        
+        // Defines the movement direction;
         if (_movementDirection == DragAxis.None)
         {
             float deltaX = mousePosition.X - _dragStartMousePosition.X;
             float deltaY = mousePosition.Y - _dragStartMousePosition.Y;
 
-            if (Math.Abs(deltaX) > AxisLockThreshold || Math.Abs(deltaY) > AxisLockThreshold)
+            if (Math.Abs(deltaX) > AxisLockThreshold || 
+                Math.Abs(deltaY) > AxisLockThreshold)
             {
                 _movementDirection = Math.Abs(deltaX) > Math.Abs(deltaY)
                     ? DragAxis.Horizontal
@@ -155,84 +146,103 @@ public class PlayerBall
         }
         else if (_movementDirection == DragAxis.Horizontal)
         {
-            float playerPositionX = mousePosition.X - _dragOffset.X;
+            float objectPositionX = mousePosition.X - _dragOffset.X;
             int newPositionX = Math.Clamp(
-                (int)playerPositionX, _roomBounds.Left, _roomBounds.Right - _player.Width
+                (int)objectPositionX, 
+                _roomBounds.Left, 
+                _roomBounds.Right - _draggingObject.Bounds.Width
                 );
 
             if (!collisionDetected)
             {
-                _player.Location = new Point(newPositionX , _player.Y);
+                _draggingObject.Bounds.Location = new Point(
+                    newPositionX , _draggingObject.Bounds.Y
+                    );
             }
         }
         else if (_movementDirection == DragAxis.Vertical)
         {
-            float playerPositionY = mousePosition.Y - _dragOffset.Y;
+            float objectPositionY = mousePosition.Y - _dragOffset.Y;
             int newPositionY = Math.Clamp(
-                (int)playerPositionY, _roomBounds.Top, _roomBounds.Bottom - _player.Height
+                (int)objectPositionY, 
+                _roomBounds.Top, 
+                _roomBounds.Bottom - _draggingObject.Bounds.Height
                 );
             
             if (!collisionDetected)
             {
-                _player.Location = new Point(_player.X, newPositionY);
+                _draggingObject.Bounds.Location = new Point(_draggingObject.Bounds.X, newPositionY);
             }
         }
     }
 
-    private bool CollisionCheck(Rectangle player)
+    private bool CollisionCheck(GameObject movingObject)
     {
-        //check if X or Y are in the same place as a block, if so, return true.
+        foreach (GameObject gameObject in _objects)
+        {
+            if (movingObject == gameObject) continue;
+            if (movingObject.Type == GameObjectType.Player && 
+                gameObject.Type == GameObjectType.Goal) return false;
+            
+            bool collisionDetected = movingObject.Bounds.Intersects(gameObject.Bounds);
+            if (collisionDetected) return true;
+        }
+
         return false;
     }
 
     private void OnStoppedMoving()
     {
-        Point oldPlayerLocation = _playerGridPosition;
-        Point newPlayerLocation = GridPositionConverter(
-            _player.X,
-            _player.Y,
-            ConversionType.ToCellPosition
-            ); //(1,0)
+        _objectGridPosition = ConvertGridPosition(
+            _draggingObject.CurrentLocation.X,
+            _draggingObject.CurrentLocation.Y,
+            ConversionType.ToIndexPosition
+            );
+        Point newPlayerLocation = ConvertGridPosition(
+            _draggingObject.Bounds.X,
+            _draggingObject.Bounds.Y,
+            ConversionType.ToIndexPosition
+            );
             
         if (_movementDirection == DragAxis.Horizontal)
         {
-            int newX = (newPlayerLocation.Y + 1) * _player.Width;
-            _player.Location = new Point(newX, _player.Y);
+            int newX = (newPlayerLocation.Y + 1) * _player.Bounds.Width;
+            _draggingObject.Bounds.Location = new Point(newX, _draggingObject.Bounds.Y);
         }
         else if (_movementDirection == DragAxis.Vertical)
         {
-            int newY = (newPlayerLocation.X + 1) * _player.Height;
-            _player.Location = new Point(_player.X, newY);
+            int newY = (newPlayerLocation.X + 1) * _player.Bounds.Height;
+            _draggingObject.Bounds.Location = new Point(_draggingObject.Bounds.X, newY);
         }
         
-        _playerGridPosition = newPlayerLocation;
-        _isDragging = false;
-        LevelClearedCheck();
-        if (!oldPlayerLocation.Equals(newPlayerLocation))
+        if (!_objectGridPosition.Equals(newPlayerLocation))
         {
             Moves++;
         }
+        _objectGridPosition = newPlayerLocation;
+        LevelClearedCheck();
+        _draggingObject = null;
     }
 
     private enum ConversionType
     {
-        ToCellPosition,
+        ToIndexPosition,
         ToPixelPosition
     }
 
     //This will give the position of the first cell, so if the object passed
     // is a rectangle, the return position will be the left/top most cell
-    private Point GridPositionConverter(int x, int y, ConversionType typeOfConversion)
+    private Point ConvertGridPosition(int x, int y, ConversionType typeOfConversion)
     {
-        _gridConverter = new GridConverter(new Point(x, y), _player.Width);
+        _gridConverter = new GridConverter(new Point(x, y), _player.Bounds.Width); // can use player to calculate bc it returns top left corner
         switch (typeOfConversion)
         {
-            case ConversionType.ToCellPosition:
-                return _gridConverter.PixelToGrid();
+            case ConversionType.ToIndexPosition:
+                return _gridConverter.PixelToIndex();
             case ConversionType.ToPixelPosition:
-                return _gridConverter.GridToPixel();
+                return _gridConverter.IndexToPixel();
             default:
-                return new Point(0, 0);
+                return new Point(-1, -1);
         }
     }
 
@@ -243,7 +253,8 @@ public class PlayerBall
 
     private bool LevelClearedCheck()
     {
-        if (_playerGridPosition == _goalGridPosition)
+        if (_objectGridPosition == _goalGridPosition &&
+            _draggingObject.Type == GameObjectType.Player)
         {
             IsLevelCleared = true;
         }
