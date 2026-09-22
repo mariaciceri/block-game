@@ -16,37 +16,25 @@ namespace PuzzleGame.Utils.GameObjects;
 
 public class LevelDesign
 {
+    private int _levelNumber;
     public int MinMoves { get; } // will get from another file
     
-    private Vector2 _playerInitialPosition;
-    private Vector2 _goalPosition;
+    public Vector2 PlayerInitialPosition;
+    public Vector2 GoalPosition;
+    public List<Rectangle> Obstacles; //set will come from the logic yeah?!
     
-    public struct Obstacle
+    public LevelDesign(int levelNumber)
     {
-        public Vector2 Position;
-        public Vector2 Size; // or Rectangle bounds, depending on what you need
-
-        public Obstacle(Vector2 position, Vector2 size)
+        _levelNumber = levelNumber;
+        Obstacles = new List<Rectangle> //testing manually
         {
-            Position = position;
-            Size = size;
-        }
-    }
-    
-    public List<Obstacle> obstacles { get; set; } //set will come from the logic yeah?!
-
-    private Texture2D _pixelTextureTest;
-    
-    public LevelDesign()
-    {
-        //what do I need to initialize here?
-    }
-    
-    public void Update(GameTime gameTime)
-    {
-        //HandleInput();
-        
-        //will need to handle moving the boxes if they are not fixed..or???
+            new Rectangle(96, 192, 96, 384),
+            new Rectangle(192, 96, 96, 96),
+            new Rectangle(288, 96, 96, 96)
+        };
+        PlayerInitialPosition = new Vector2(96, 96);
+        GoalPosition = new Vector2(480, 480);
     }
     
 }
+
