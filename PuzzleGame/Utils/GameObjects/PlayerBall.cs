@@ -11,9 +11,10 @@ namespace PuzzleGame.Utils.GameObjects;
 
 public class PlayerBall
 {
-    private Rectangle _player;
-    private Rectangle _goal;
-    private bool _isDragging;
+    private List<GameObject> _objects;
+    private GameObject _player;
+    private GameObject _goal;
+    private GameObject _draggingObject;
     private Vector2 _dragOffset;
 
     private enum DragAxis {None, Horizontal, Vertical}
@@ -27,7 +28,7 @@ public class PlayerBall
     private Rectangle _roomBounds;
     private GridConverter _gridConverter;
 
-    private Point _playerGridPosition;
+    private Point _objectGridPosition;
     private Point _goalGridPosition;
     
     private Texture2D _pixelTextureTest;
@@ -94,16 +95,16 @@ public class PlayerBall
         
         Vector2 mousePosition = GameController.MousePosition();
         bool isHoldingClick = GameController.MovePlayer();
-
-        if (isHoldingClick && !_isDragging && _player.Contains(mousePosition))
+            
+        if (isHoldingClick && _draggingObject == null)
         {
             OnStartMoving(mousePosition);
         }
-        else if (isHoldingClick && _isDragging)
+        else if (isHoldingClick && _draggingObject != null)
         {
             OnMovingPlayer(mousePosition);
         }
-        else if (GameController.WasPlayerJustReleased() && _isDragging)
+        else if (GameController.WasPlayerJustReleased() && _draggingObject != null)
         {
             OnStoppedMoving();
         }
@@ -111,15 +112,31 @@ public class PlayerBall
 
     private void OnStartMoving(Vector2 mousePosition)
     {
+        _draggingObject = FindClickedObject(mousePosition);
+        if (_draggingObject == null) return;
+        
         _dragOffset = new Vector2(
-            mousePosition.X - _player.X,
-            mousePosition.Y - _player.Y
+            mousePosition.X - _draggingObject.Bounds.X,
+            mousePosition.Y - _draggingObject.Bounds.Y
             );
-        _isDragging = true;
+
         _movementDirection = DragAxis.None;
         _dragStartMousePosition = mousePosition;
     }
 
+    private GameObject FindClickedObject(Vector2 mousePosition)
+    {
+        foreach (GameObject gameObject in _objects)
+        {
+            if (gameObject.Type != GameObjectType.Goal &&
+                gameObject.Bounds.Contains(mousePosition))
+            {
+                return gameObject;
+            }
+        }
+        return null;
+    }
+    
     private void OnMovingPlayer(Vector2 mousePosition)
     {
         bool collisionDetected = CollisionCheck(_player);
@@ -238,9 +255,30 @@ public class PlayerBall
     {
         _pixelTextureTest = new Texture2D(Core.GraphicsDevice, 1, 1);
         _pixelTextureTest.SetData(new[] { Color.White });
+
+        foreach (var gameObject in _objects)
+        {
+            Color color;
+            
+            switch (gameObject.Type)
+            {
+                case GameObjectType.Player:
+                    color = Color.Red;
+                    break;
+                case GameObjectType.Goal:
+                    color = Color.Green;
+                    break;
+                case GameObjectType.Obstacle:
+                    color = Color.Blue;
+                    break;
+                default:
+                    color = Color.White;
+                    break;
+            }
+            
+            Core.SpriteBatch.Draw(_pixelTextureTest, gameObject.Bounds, color);
+        }
         
-        Core.SpriteBatch.Draw(_pixelTextureTest, _player, Color.Green);
         
-        Core.SpriteBatch.Draw(_pixelTextureTest, _goal, Color.Black);
     }
 }
