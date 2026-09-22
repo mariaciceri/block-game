@@ -20,7 +20,7 @@ public class GridConverter
         _cellSize = cellSize;
     }
 
-    public Point PixelToGrid()
+    public Point PixelToIndex()
     {
         int column = (int)Math.Round((float)_position.Y / _cellSize) - 1;
         int row = (int)Math.Round((float)_position.X / _cellSize) - 1 ;
@@ -28,7 +28,7 @@ public class GridConverter
         return new Point(column, row);
     }
 
-    public Point GridToPixel()
+    public Point IndexToPixel()
     {
         int columnInGrid = _position.X + 1;
         int rowInGrid = _position.Y + 1;
