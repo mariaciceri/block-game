@@ -104,6 +104,12 @@ public class PlayerBall
         _draggingObject = FindClickedObject(mousePosition);
         if (_draggingObject == null) return;
         
+        _objectGridPosition = ConvertGridPosition(
+            _draggingObject.Bounds.X,
+            _draggingObject.Bounds.Y,
+            ConversionType.ToIndexPosition
+        );
+        
         _dragOffset = new Vector2(
             mousePosition.X - _draggingObject.Bounds.X,
             mousePosition.Y - _draggingObject.Bounds.Y
