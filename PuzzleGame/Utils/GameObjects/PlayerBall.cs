@@ -182,10 +182,12 @@ public class PlayerBall
         {
             if (movingObject == gameObject) continue;
             if (movingObject.Type == GameObjectType.Player && 
-                gameObject.Type == GameObjectType.Goal) return false;
-            
-            bool collisionDetected = movingObject.Bounds.Intersects(gameObject.Bounds);
-            if (collisionDetected) return true;
+                gameObject.Type == GameObjectType.Goal) continue;
+
+            if (movingObject.Bounds.Intersects(gameObject.Bounds))
+            {
+                return true;
+            }
         }
 
         return false;
