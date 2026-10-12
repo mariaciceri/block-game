@@ -15,12 +15,10 @@ public class GameObject
 {
     public GameObjectType Type;
     public Rectangle Bounds; // position + size combined
-    public Point CurrentLocation;
 
     public GameObject(GameObjectType type, Rectangle bounds)
     {
         Type = type;
         Bounds = bounds;
-        CurrentLocation = bounds.Location;
     }
 }
