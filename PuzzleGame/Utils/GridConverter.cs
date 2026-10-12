@@ -20,10 +20,20 @@ public class GridConverter
         _cellSize = cellSize;
     }
 
+    public GridConverter(int cellSize)
+    {
+        _cellSize = cellSize;
+    }
+
     public Point PixelToIndex()
     {
-        int column = (int)Math.Round((float)_position.Y / _cellSize) - 1;
-        int row = (int)Math.Round((float)_position.X / _cellSize) - 1 ;
+        return PixelToIndex(new Point(_position.X, _position.Y));
+    }
+
+    public Point PixelToIndex(Point location)
+    {
+        int column = (int)Math.Round((float)location.Y / _cellSize) - 1;
+        int row = (int)Math.Round((float)location.X / _cellSize) - 1;
         
         return new Point(column, row);
     }
