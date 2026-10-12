@@ -9,13 +9,16 @@ using Vector2 = Microsoft.Xna.Framework.Vector2;
 
 namespace PuzzleGame.Utils.GameObjects;
 
-public class PlayerBall
+public enum Directions {None, Horizontal, Vertical}
+
+public class MovableObjects
 {
     private List<GameObject> _objects;
     private GameObject _player;
     private GameObject _goal;
     private GameObject _draggingObject;
     private Vector2 _dragOffset;
+    private BoardLayout  _board;
 
     private enum DragAxis {None, Horizontal, Vertical}
     private DragAxis _movementDirection;
@@ -70,11 +73,14 @@ public class PlayerBall
             480, 480,
             ConversionType.ToIndexPosition
         );
+        
+        _board.SetBoard(_objects);
     }
 
-    public PlayerBall(Rectangle roomBounds)
+    public MovableObjects(Rectangle roomBounds, BoardLayout board)
     {
         _roomBounds = roomBounds;
+        _board = board;
     }
     
     private void HandleInput()
@@ -115,7 +121,7 @@ public class PlayerBall
             mousePosition.Y - _draggingObject.Bounds.Y
             );
 
-        _movementDirection = DragAxis.None;
+        _movementDirection = Directions.None;
         _dragStartMousePosition = mousePosition;
     }
 
@@ -134,23 +140,9 @@ public class PlayerBall
     
     private void OnMovingPlayer(Vector2 mousePosition)
     {
-        bool collisionDetected = CollisionCheck(_draggingObject);
+        bool collisionDetected = CollisionCheck();
         
-        // Defines the movement direction;
-        if (_movementDirection == DragAxis.None)
-        {
-            float deltaX = mousePosition.X - _dragStartMousePosition.X;
-            float deltaY = mousePosition.Y - _dragStartMousePosition.Y;
-
-            if (Math.Abs(deltaX) > AxisLockThreshold || 
-                Math.Abs(deltaY) > AxisLockThreshold)
-            {
-                _movementDirection = Math.Abs(deltaX) > Math.Abs(deltaY)
-                    ? DragAxis.Horizontal
-                    : DragAxis.Vertical;
-            }
-        }
-        else if (_movementDirection == DragAxis.Horizontal)
+        if (_movementDirection == Directions.Horizontal)
         {
             float objectPositionX = mousePosition.X - _dragOffset.X;
             int newPositionX = Math.Clamp(
@@ -158,15 +150,15 @@ public class PlayerBall
                 _roomBounds.Left, 
                 _roomBounds.Right - _draggingObject.Bounds.Width
                 );
-
-            if (!collisionDetected)
+        
+            if (!collisionDetected && _previousMovementDirection == _movementDirection)
             {
                 _draggingObject.Bounds.Location = new Point(
                     newPositionX , _draggingObject.Bounds.Y
                     );
             }
         }
-        else if (_movementDirection == DragAxis.Vertical)
+        else if (_movementDirection == Directions.Vertical)
         {
             float objectPositionY = mousePosition.Y - _dragOffset.Y;
             int newPositionY = Math.Clamp(
@@ -175,49 +167,71 @@ public class PlayerBall
                 _roomBounds.Bottom - _draggingObject.Bounds.Height
                 );
             
-            if (!collisionDetected)
+            if (!collisionDetected && _previousMovementDirection == _movementDirection)
             {
-                _draggingObject.Bounds.Location = new Point(_draggingObject.Bounds.X, newPositionY);
+                _draggingObject.Bounds.Location = new Point(
+                    _draggingObject.Bounds.X, newPositionY
+                    );
             }
+        }
+        else
+        {
+            CheckDraggingDirection(mousePosition);
+        }
+        _previousMovementDirection = _movementDirection;
+        
+    }
+
+    private void CheckDraggingDirection(Vector2 mousePosition)
+    {
+        float deltaX = mousePosition.X - _dragStartMousePosition.X;
+        float deltaY = mousePosition.Y - _dragStartMousePosition.Y;
+
+        if (Math.Abs(deltaX) > AxisLockThreshold || 
+            Math.Abs(deltaY) > AxisLockThreshold)
+        {
+            _movementDirection = Math.Abs(deltaX) > Math.Abs(deltaY) 
+                ? Directions.Horizontal : Directions.Vertical;
         }
     }
 
-    private bool CollisionCheck(GameObject movingObject)
+    private bool CollisionCheck()
     {
-        foreach (GameObject gameObject in _objects)
-        {
-            if (movingObject == gameObject) continue;
-            if (movingObject.Type == GameObjectType.Player && 
-                gameObject.Type == GameObjectType.Goal) continue;
+        // foreach (GameObject gameObject in _objects)
+        // {
+        //     if (movingObject == gameObject) continue;
+        //     if (movingObject.Type == GameObjectType.Player && 
+        //         gameObject.Type == GameObjectType.Goal) continue;
+        //
+        //     Rectangle inflatedPosition = movingObject.Bounds;
+        //     inflatedPosition.Inflate(1,1);
+        //
+        //     if (inflatedPosition.Intersects(gameObject.Bounds))
+        //     {
+        //         return false;
+        //     }
+        // }
+        
+        if (_movementDirection == Directions.None) return false;
 
-            if (movingObject.Bounds.Intersects(gameObject.Bounds))
-            {
-                return true;
-            }
-        }
-
+        _board.GetAvailableCells(_objectGridPosition, _movementDirection);
         return false;
     }
 
     private void OnStoppedMoving()
     {
-        _objectGridPosition = ConvertGridPosition(
-            _draggingObject.CurrentLocation.X,
-            _draggingObject.CurrentLocation.Y,
-            ConversionType.ToIndexPosition
-            );
         Point newPlayerLocation = ConvertGridPosition(
             _draggingObject.Bounds.X,
             _draggingObject.Bounds.Y,
             ConversionType.ToIndexPosition
             );
             
-        if (_movementDirection == DragAxis.Horizontal)
+        if (_movementDirection == Directions.Horizontal)
         {
             int newX = (newPlayerLocation.Y + 1) * _player.Bounds.Width;
             _draggingObject.Bounds.Location = new Point(newX, _draggingObject.Bounds.Y);
         }
-        else if (_movementDirection == DragAxis.Vertical)
+        else if (_movementDirection == Directions.Vertical)
         {
             int newY = (newPlayerLocation.X + 1) * _player.Bounds.Height;
             _draggingObject.Bounds.Location = new Point(_draggingObject.Bounds.X, newY);
