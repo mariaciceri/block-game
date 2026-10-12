@@ -22,9 +22,10 @@ public class GameScene : Scene
         LevelCleared
     }
     
-    private PlayerBall _player;
+    private MovableObjects _player;
     private LevelDesign _level;
-
+    private BoardLayout _board;
+    
     private Texture2D _pixelTextureTest;
     
     private Tilemap _tilemap; //draw the columns and rows on the screen maybe
@@ -89,7 +90,8 @@ public class GameScene : Scene
     {
         //currently passing the position manually - a function will give us these
         _level = new LevelDesign(0);
-        _player = new PlayerBall(_roomBounds);
+        _board = new BoardLayout(_level);
+        _player = new MovableObjects(_roomBounds, _board);
         _player.Initialize(_level, (int)_tilemap.TileWidth);
         
         _score = 0;
