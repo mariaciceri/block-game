@@ -17,8 +17,8 @@ public class BoardLayout
     public struct ObjectsOnScene(Point location, int height, int width)
     { 
         public Point Location = location;
-        public int Height = height;
-        public int Width = width;
+        public readonly int Height = height;
+        public readonly int Width = width;
     }
 
     private struct ObjectSize(int x, int y)
@@ -65,28 +65,22 @@ public class BoardLayout
         //update one position or all the positions? if all, this method is redundant
     }
     
-    public List<Point> GetAvailableCells(Point currentObjectGridPosition, Directions direction)
+    public (int, int) GetAvailableCells(Point currentObjectGridPosition, Directions direction)
     {
         List<Point> objectsInTheWay = new();
         (int TopLeft, int DownRight) availableCells;
         ObjectsOnScene draggingObject = _board.Find(o => o.Location == currentObjectGridPosition);
 
         //Get the size/occupied space of the block being dragged
-        ObjectSize movingObjectOccupiedSpaceVertical = new(
-            draggingObject.Location.X, draggingObject.Height + draggingObject.Location.X - 1
-            );
-        ObjectSize movingObjectOccupiedSpaceHorizontal = new(
-            draggingObject.Location.Y, draggingObject.Width + draggingObject.Location.Y - 1
-        );
+        (ObjectSize movingObjectOccupiedSpaceVertical, 
+            ObjectSize movingObjectOccupiedSpaceHorizontal) = GetObjectSize(draggingObject);
         
         if (direction == Directions.Horizontal)
         {
             foreach (ObjectsOnScene obstacle in _board)
             {
                 //Only occupied vertical space matters when dragging horizontally
-                ObjectSize obstacleOccupiedSpaceVertical = new(
-                        obstacle.Location.X, obstacle.Height + obstacle.Location.X - 1
-                    );
+                (ObjectSize obstacleOccupiedSpaceVertical, _) = GetObjectSize(obstacle);
                 
                 if (RangesOverlap(movingObjectOccupiedSpaceVertical, obstacleOccupiedSpaceVertical))
                 {
@@ -98,20 +92,14 @@ public class BoardLayout
             
             int currentObjectIndex = objectsInTheWay.IndexOf(currentObjectGridPosition);
             
-            availableCells.TopLeft = currentObjectIndex >= 1 
-                ? objectsInTheWay[currentObjectIndex - 1].Y : -1;
-            availableCells.DownRight = currentObjectIndex < objectsInTheWay.Count - 1
-                ? objectsInTheWay[currentObjectIndex + 1].Y
-                : -1;
+            availableCells = GetOccupiedCells(currentObjectIndex, direction, objectsInTheWay);
         }
         else
         {
             foreach (ObjectsOnScene obstacle in _board)
             {
                 //Only horizontal occupied space matters when dragging vertically
-                ObjectSize obstacleOccupiedSpaceHorizontal = new(
-                    obstacle.Location.Y, obstacle.Width + obstacle.Location.Y - 1
-                );
+                (_, ObjectSize obstacleOccupiedSpaceHorizontal) = GetObjectSize(obstacle);
 
                 if (RangesOverlap(movingObjectOccupiedSpaceHorizontal, obstacleOccupiedSpaceHorizontal))
                 {
@@ -122,23 +110,58 @@ public class BoardLayout
             
             int currentObjectIndex = objectsInTheWay.IndexOf(currentObjectGridPosition);
             
-            
-            availableCells.TopLeft = currentObjectIndex >= 1 
-                ? objectsInTheWay[currentObjectIndex - 1].X : -1;
-            availableCells.DownRight = currentObjectIndex < objectsInTheWay.Count - 1
-                ? objectsInTheWay[currentObjectIndex + 1].X
-                : -1;
+            availableCells = GetOccupiedCells(currentObjectIndex, direction, objectsInTheWay);
         }
-        
-        return objectsInTheWay;
-        
-        //return index - 1 and index + 1
-        //if no index lower or higher (meaning no box on one side) return -1.
+
+        return availableCells;
     }
 
     private static bool RangesOverlap(ObjectSize movingObject, ObjectSize obstacleObject)
     {
         return movingObject.StartAt <= obstacleObject.EndAt && movingObject.EndAt >= obstacleObject.StartAt;
+    }
+
+    private static (ObjectSize, ObjectSize) GetObjectSize(ObjectsOnScene currentObject)
+    {
+        ObjectSize verticalSpace = new(
+            currentObject.Location.X, currentObject.Height + currentObject.Location.X - 1
+        );
+        ObjectSize horizontalSpace = new(
+            currentObject.Location.Y, currentObject.Width + currentObject.Location.Y - 1
+        );
+        
+        return (verticalSpace, horizontalSpace);
+    }
+
+    private static (int, int) GetOccupiedCells(
+        int currentObjectIndex,
+        Directions direction, 
+        List<Point> objectsInTheWay
+        )
+    {
+        int topLeft;
+        int downRight;
+        
+        if (direction == Directions.Horizontal)
+        {
+            topLeft = currentObjectIndex >= 1
+                ? objectsInTheWay[currentObjectIndex - 1].Y
+                : -1;
+            downRight = currentObjectIndex < objectsInTheWay.Count - 1
+                ? objectsInTheWay[currentObjectIndex + 1].Y
+                : -1;
+        }
+        else
+        {
+            topLeft = currentObjectIndex >= 1
+                ? objectsInTheWay[currentObjectIndex - 1].X
+                : -1;
+            downRight = currentObjectIndex < objectsInTheWay.Count - 1
+                ? objectsInTheWay[currentObjectIndex + 1].X
+                : -1;
+        }
+        
+        return (topLeft, downRight);
     }
 }
 
