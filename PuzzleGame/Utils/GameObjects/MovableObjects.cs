@@ -20,8 +20,7 @@ public class MovableObjects
     private Vector2 _dragOffset;
     private BoardLayout  _board;
 
-    private enum DragAxis {None, Horizontal, Vertical}
-    private DragAxis _movementDirection;
+    private Directions _movementDirection;
     private Vector2 _dragStartMousePosition;
     private const float AxisLockThreshold = 3f;
     
@@ -29,10 +28,22 @@ public class MovableObjects
     public bool IsLevelCleared;
     
     private Rectangle _roomBounds;
-    private GridConverter _gridConverter;
+    private GridConverter _gridConverter = new (96);
+    private struct CollisionBounds(int startAt, int endAt)
+    {
+        public int StartAt = startAt;
+        public int EndAt = endAt;
+    }
+    private CollisionBounds _collisionBounds;
 
     private Point _objectGridPosition;
     private Point _goalGridPosition;
+    private enum ConversionType
+    {
+        ToIndexPosition,
+        ToPixelPosition,
+        CollisionBounds
+    }
     
     private Texture2D _pixelTextureTest;
 
@@ -140,45 +151,74 @@ public class MovableObjects
     
     private void OnMovingPlayer(Vector2 mousePosition)
     {
-        bool collisionDetected = CollisionCheck();
+        CollisionBounds collisionDetected = CollisionCheck();
         
         if (_movementDirection == Directions.Horizontal)
         {
             float objectPositionX = mousePosition.X - _dragOffset.X;
+            Point convertedCollisionBounds = ConvertGridPosition(
+                collisionDetected.StartAt, 
+                collisionDetected.EndAt, 
+                ConversionType.CollisionBounds
+            );
+            CollisionBounds pixelBounds = new (convertedCollisionBounds.X, convertedCollisionBounds.Y);
+            
+            int lowestPositionAvailable = _roomBounds.Left;
+            int highestPositionAvailable = _roomBounds.Right - _draggingObject.Bounds.Width;
+            
+            if (pixelBounds.StartAt != -1)
+            {
+                lowestPositionAvailable = pixelBounds.StartAt;
+            }
+            if (pixelBounds.EndAt != -1)
+            {
+                highestPositionAvailable = pixelBounds.EndAt;
+            }
+            
             int newPositionX = Math.Clamp(
                 (int)objectPositionX, 
-                _roomBounds.Left, 
-                _roomBounds.Right - _draggingObject.Bounds.Width
-                );
-        
-            if (!collisionDetected && _previousMovementDirection == _movementDirection)
-            {
-                _draggingObject.Bounds.Location = new Point(
-                    newPositionX , _draggingObject.Bounds.Y
-                    );
-            }
+                lowestPositionAvailable, 
+                highestPositionAvailable
+            );
+            
+            _draggingObject.Bounds.Location = new Point(
+                newPositionX , _draggingObject.Bounds.Y
+            );
         }
         else if (_movementDirection == Directions.Vertical)
         {
             float objectPositionY = mousePosition.Y - _dragOffset.Y;
+            Point convertedCollisionBounds = ConvertGridPosition(
+                collisionDetected.StartAt, 
+                collisionDetected.EndAt, 
+                ConversionType.CollisionBounds
+            );
+            CollisionBounds pixelBounds = new (convertedCollisionBounds.X, convertedCollisionBounds.Y);
+
+            int lowestPositionAvailable = _roomBounds.Top;
+            int highestPositionAvailable = _roomBounds.Bottom - _draggingObject.Bounds.Height;
+
+            if (pixelBounds.StartAt != -1)
+            {
+                lowestPositionAvailable = pixelBounds.StartAt;
+            }
+            if (pixelBounds.EndAt != -1)
+            {
+                highestPositionAvailable = pixelBounds.EndAt;
+            }
+            
             int newPositionY = Math.Clamp(
                 (int)objectPositionY, 
-                _roomBounds.Top, 
-                _roomBounds.Bottom - _draggingObject.Bounds.Height
+                lowestPositionAvailable, 
+                highestPositionAvailable
                 );
             
-            if (!collisionDetected && _previousMovementDirection == _movementDirection)
-            {
-                _draggingObject.Bounds.Location = new Point(
-                    _draggingObject.Bounds.X, newPositionY
-                    );
-            }
+            _draggingObject.Bounds.Location = new Point(_draggingObject.Bounds.X, newPositionY);
         }
         else
         {
             CheckDraggingDirection(mousePosition);
         }
-        _previousMovementDirection = _movementDirection;
         
     }
 
@@ -195,27 +235,14 @@ public class MovableObjects
         }
     }
 
-    private bool CollisionCheck()
+    private CollisionBounds CollisionCheck()
     {
-        // foreach (GameObject gameObject in _objects)
-        // {
-        //     if (movingObject == gameObject) continue;
-        //     if (movingObject.Type == GameObjectType.Player && 
-        //         gameObject.Type == GameObjectType.Goal) continue;
-        //
-        //     Rectangle inflatedPosition = movingObject.Bounds;
-        //     inflatedPosition.Inflate(1,1);
-        //
-        //     if (inflatedPosition.Intersects(gameObject.Bounds))
-        //     {
-        //         return false;
-        //     }
-        // }
-        
-        if (_movementDirection == Directions.None) return false;
+        if (_movementDirection == Directions.None) return new CollisionBounds(-1,-1);
 
-        _board.GetAvailableCells(_objectGridPosition, _movementDirection);
-        return false;
+        var (topLeft, downRight) = _board.GetAvailableCells(_objectGridPosition, _movementDirection);
+        _collisionBounds = new(topLeft, downRight);
+        
+        return _collisionBounds;
     }
 
     private void OnStoppedMoving()
@@ -246,23 +273,18 @@ public class MovableObjects
         _draggingObject = null;
     }
 
-    private enum ConversionType
-    {
-        ToIndexPosition,
-        ToPixelPosition
-    }
-
     //This will give the position of the first cell, so if the object passed
     // is a rectangle, the return position will be the left/top most cell
     private Point ConvertGridPosition(int x, int y, ConversionType typeOfConversion)
     {
-        _gridConverter = new GridConverter(new Point(x, y), _player.Bounds.Width); // can use player to calculate bc it returns top left corner
         switch (typeOfConversion)
         {
             case ConversionType.ToIndexPosition:
-                return _gridConverter.PixelToIndex();
+                return _gridConverter.PixelToIndex(new(x, y));
             case ConversionType.ToPixelPosition:
-                return _gridConverter.IndexToPixel();
+                return _gridConverter.IndexToPixel(new(x, y));
+            case ConversionType.CollisionBounds:
+                return _gridConverter.ConvertCollisionBounds(x,y);
             default:
                 return new Point(-1, -1);
         }
