@@ -60,9 +60,12 @@ public class BoardLayout
     }
 
 
-    public void UpdateBoard()
+    public void UpdateBoard(Point currentObjectGridPosition, Point newPosition)
     {
-        //update one position or all the positions? if all, this method is redundant
+        int objectIndex = _board.FindIndex(o => o.Location == currentObjectGridPosition);
+        ObjectsOnScene draggingObject = _board[objectIndex];
+        draggingObject.Location = newPosition;
+        _board[objectIndex] = draggingObject;
     }
     
     public (int, int) GetAvailableCells(Point currentObjectGridPosition, Directions direction)
@@ -81,16 +84,17 @@ public class BoardLayout
             {
                 //Only occupied vertical space matters when dragging horizontally
                 (ObjectSize obstacleOccupiedSpaceVertical, _) = GetObjectSize(obstacle);
-                
                 if (RangesOverlap(movingObjectOccupiedSpaceVertical, obstacleOccupiedSpaceVertical))
                 {
-                    objectsInTheWay.Add(obstacle.Location);
+                        objectsInTheWay.Add(obstacle.Location);
                 }
-                
             }
             objectsInTheWay.Sort((a, b) => a.Y.CompareTo(b.Y));
             
             int currentObjectIndex = objectsInTheWay.IndexOf(currentObjectGridPosition);
+            
+            //must create a helper function that will get the object immediately before our dragging object
+            // and include the height/width in it
             
             availableCells = GetOccupiedCells(currentObjectIndex, direction, objectsInTheWay);
         }
@@ -133,7 +137,7 @@ public class BoardLayout
         return (verticalSpace, horizontalSpace);
     }
 
-    private static (int, int) GetOccupiedCells(
+    private (int, int) GetOccupiedCells(
         int currentObjectIndex,
         Directions direction, 
         List<Point> objectsInTheWay
@@ -141,11 +145,28 @@ public class BoardLayout
     {
         int topLeft;
         int downRight;
+        int topLeftFinalHorizontal;
+        int topLeftFinalVertical;
+        
+        //Find the object blocking to the left or up,
+        //calculate their dimension and use their final position as the last unavailable grid position
+        if (currentObjectIndex >= 1)
+        {
+            ObjectsOnScene topLeftBlocker = _board.Find(o => o.Location == objectsInTheWay[currentObjectIndex - 1]);
+            (ObjectSize topLeftHorizontalSize, ObjectSize tofLeftVerticalSize) = GetObjectSize(topLeftBlocker);
+            topLeftFinalHorizontal = topLeftHorizontalSize.EndAt;
+            topLeftFinalVertical = tofLeftVerticalSize.EndAt;
+        }
+        else
+        {
+            topLeftFinalHorizontal = -1;
+            topLeftFinalVertical = -1;
+        }
         
         if (direction == Directions.Horizontal)
         {
             topLeft = currentObjectIndex >= 1
-                ? objectsInTheWay[currentObjectIndex - 1].Y
+                ? topLeftFinalVertical
                 : -1;
             downRight = currentObjectIndex < objectsInTheWay.Count - 1
                 ? objectsInTheWay[currentObjectIndex + 1].Y
@@ -154,7 +175,7 @@ public class BoardLayout
         else
         {
             topLeft = currentObjectIndex >= 1
-                ? objectsInTheWay[currentObjectIndex - 1].X
+                ? topLeftFinalHorizontal
                 : -1;
             downRight = currentObjectIndex < objectsInTheWay.Count - 1
                 ? objectsInTheWay[currentObjectIndex + 1].X
