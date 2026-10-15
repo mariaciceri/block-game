@@ -36,8 +36,8 @@ public class MovableObjects
     }
     private CollisionBounds _collisionBounds;
 
-    private Point _objectGridPosition;
-    private Point _goalGridPosition;
+    private GridPosition _objectGridPosition;
+    private GridPosition _goalGridPosition;
     private enum ConversionType
     {
         ToIndexPosition,
@@ -152,16 +152,19 @@ public class MovableObjects
     private void OnMovingPlayer(Vector2 mousePosition)
     {
         CollisionBounds collisionDetected = CollisionCheck();
+        int length = _movementDirection == Directions.Horizontal ?
+            _draggingObject.Bounds.Width/96 : _draggingObject.Bounds.Height/96;
         
         if (_movementDirection == Directions.Horizontal)
         {
             float objectPositionX = mousePosition.X - _dragOffset.X;
-            Point convertedCollisionBounds = ConvertGridPosition(
+            GridPosition convertedCollisionBounds = ConvertGridPosition(
                 collisionDetected.StartAt, 
                 collisionDetected.EndAt, 
-                ConversionType.CollisionBounds
+                ConversionType.CollisionBounds,
+                length
             );
-            CollisionBounds pixelBounds = new (convertedCollisionBounds.X, convertedCollisionBounds.Y);
+            CollisionBounds pixelBounds = new (convertedCollisionBounds.Row, convertedCollisionBounds.Column);
             
             int lowestPositionAvailable = _roomBounds.Left;
             int highestPositionAvailable = _roomBounds.Right - _draggingObject.Bounds.Width;
@@ -188,12 +191,14 @@ public class MovableObjects
         else if (_movementDirection == Directions.Vertical)
         {
             float objectPositionY = mousePosition.Y - _dragOffset.Y;
-            Point convertedCollisionBounds = ConvertGridPosition(
+            
+            GridPosition convertedCollisionBounds = ConvertGridPosition(
                 collisionDetected.StartAt, 
                 collisionDetected.EndAt, 
-                ConversionType.CollisionBounds
+                ConversionType.CollisionBounds,
+                length
             );
-            CollisionBounds pixelBounds = new (convertedCollisionBounds.X, convertedCollisionBounds.Y);
+            CollisionBounds pixelBounds = new (convertedCollisionBounds.Row, convertedCollisionBounds.Column);
 
             int lowestPositionAvailable = _roomBounds.Top;
             int highestPositionAvailable = _roomBounds.Bottom - _draggingObject.Bounds.Height;
@@ -247,7 +252,7 @@ public class MovableObjects
 
     private void OnStoppedMoving()
     {
-        Point newPlayerLocation = ConvertGridPosition(
+        GridPosition newObjectLocation = ConvertGridPosition(
             _draggingObject.Bounds.X,
             _draggingObject.Bounds.Y,
             ConversionType.ToIndexPosition
@@ -255,27 +260,28 @@ public class MovableObjects
             
         if (_movementDirection == Directions.Horizontal)
         {
-            int newX = (newPlayerLocation.Y + 1) * _player.Bounds.Width;
+            int newX = (newObjectLocation.Column + 1) * _player.Bounds.Width;
             _draggingObject.Bounds.Location = new Point(newX, _draggingObject.Bounds.Y);
         }
         else if (_movementDirection == Directions.Vertical)
         {
-            int newY = (newPlayerLocation.X + 1) * _player.Bounds.Height;
+            int newY = (newObjectLocation.Row + 1) * _player.Bounds.Height;
             _draggingObject.Bounds.Location = new Point(_draggingObject.Bounds.X, newY);
         }
         
-        if (!_objectGridPosition.Equals(newPlayerLocation))
+        if (!_objectGridPosition.Equals(newObjectLocation))
         {
             Moves++;
         }
-        _objectGridPosition = newPlayerLocation;
+        _board.UpdateBoard(_objectGridPosition, newObjectLocation);
+        _objectGridPosition = newObjectLocation;
         LevelClearedCheck();
         _draggingObject = null;
     }
 
     //This will give the position of the first cell, so if the object passed
     // is a rectangle, the return position will be the left/top most cell
-    private Point ConvertGridPosition(int x, int y, ConversionType typeOfConversion)
+    private GridPosition ConvertGridPosition(int x, int y, ConversionType typeOfConversion, int length = 1)
     {
         switch (typeOfConversion)
         {
@@ -284,9 +290,9 @@ public class MovableObjects
             case ConversionType.ToPixelPosition:
                 return _gridConverter.IndexToPixel(new(x, y));
             case ConversionType.CollisionBounds:
-                return _gridConverter.ConvertCollisionBounds(x,y);
+                return _gridConverter.ConvertCollisionBounds(x, y, length);
             default:
-                return new Point(-1, -1);
+                return new GridPosition(-1, -1);
         }
     }
 

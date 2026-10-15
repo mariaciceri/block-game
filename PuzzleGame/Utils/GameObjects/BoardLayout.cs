@@ -14,9 +14,9 @@ namespace PuzzleGame.Utils.GameObjects;
 public class BoardLayout
 {
     //It differs from a regular Rectangle because location will be the indexes, not pixel position.
-    public struct ObjectsOnScene(Point location, int height, int width)
+    public struct ObjectsOnScene(GridPosition location, int height, int width)
     { 
-        public Point Location = location;
+        public GridPosition Location = location;
         public readonly int Height = height;
         public readonly int Width = width;
     }
@@ -48,7 +48,7 @@ public class BoardLayout
         
         foreach (var obj in objects)
         {
-            Point location = _gridConverter.PixelToIndex(obj.Bounds.Location);
+            GridPosition location = _gridConverter.PixelToIndex(obj.Bounds.Location);
             
             ObjectsOnScene objectOnScene = new ObjectsOnScene(
                 location,
@@ -58,9 +58,8 @@ public class BoardLayout
             _board.Add(objectOnScene);
         }
     }
-
-
-    public void UpdateBoard(Point currentObjectGridPosition, Point newPosition)
+    
+    public void UpdateBoard(GridPosition currentObjectGridPosition, GridPosition newPosition)
     {
         int objectIndex = _board.FindIndex(o => o.Location == currentObjectGridPosition);
         ObjectsOnScene draggingObject = _board[objectIndex];
@@ -68,9 +67,11 @@ public class BoardLayout
         _board[objectIndex] = draggingObject;
     }
     
-    public (int, int) GetAvailableCells(Point currentObjectGridPosition, Directions direction)
+    public (int, int) GetAvailableCells(
+        GridPosition currentObjectGridPosition, Directions direction
+        )
     {
-        List<Point> objectsInTheWay = new();
+        List<GridPosition> objectsInTheWay = new();
         (int TopLeft, int DownRight) availableCells;
         ObjectsOnScene draggingObject = _board.Find(o => o.Location == currentObjectGridPosition);
 
@@ -89,7 +90,7 @@ public class BoardLayout
                         objectsInTheWay.Add(obstacle.Location);
                 }
             }
-            objectsInTheWay.Sort((a, b) => a.Y.CompareTo(b.Y));
+            objectsInTheWay.Sort((a, b) => a.Column.CompareTo(b.Column));
             
             int currentObjectIndex = objectsInTheWay.IndexOf(currentObjectGridPosition);
             
@@ -110,7 +111,7 @@ public class BoardLayout
                     objectsInTheWay.Add(obstacle.Location);
                 }
             }
-            objectsInTheWay.Sort((a, b) => a.X.CompareTo(b.X));
+            objectsInTheWay.Sort((a, b) => a.Row.CompareTo(b.Row));
             
             int currentObjectIndex = objectsInTheWay.IndexOf(currentObjectGridPosition);
             
@@ -128,10 +129,10 @@ public class BoardLayout
     private static (ObjectSize, ObjectSize) GetObjectSize(ObjectsOnScene currentObject)
     {
         ObjectSize verticalSpace = new(
-            currentObject.Location.X, currentObject.Height + currentObject.Location.X - 1
+            currentObject.Location.Row, currentObject.Height + currentObject.Location.Row - 1
         );
         ObjectSize horizontalSpace = new(
-            currentObject.Location.Y, currentObject.Width + currentObject.Location.Y - 1
+            currentObject.Location.Column, currentObject.Width + currentObject.Location.Column - 1
         );
         
         return (verticalSpace, horizontalSpace);
@@ -140,7 +141,7 @@ public class BoardLayout
     private (int, int) GetOccupiedCells(
         int currentObjectIndex,
         Directions direction, 
-        List<Point> objectsInTheWay
+        List<GridPosition> objectsInTheWay
         )
     {
         int topLeft;
@@ -169,7 +170,7 @@ public class BoardLayout
                 ? topLeftFinalVertical
                 : -1;
             downRight = currentObjectIndex < objectsInTheWay.Count - 1
-                ? objectsInTheWay[currentObjectIndex + 1].Y
+                ? objectsInTheWay[currentObjectIndex + 1].Column
                 : -1;
         }
         else
@@ -178,7 +179,7 @@ public class BoardLayout
                 ? topLeftFinalHorizontal
                 : -1;
             downRight = currentObjectIndex < objectsInTheWay.Count - 1
-                ? objectsInTheWay[currentObjectIndex + 1].X
+                ? objectsInTheWay[currentObjectIndex + 1].Row
                 : -1;
         }
         

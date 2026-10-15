@@ -18,15 +18,16 @@ public class GridConverter
         _cellSize = cellSize;
     }
 
-    public Point PixelToIndex(Point location)
+    public GridPosition PixelToIndex(Point location)
     {
         int column = (int)Math.Round((float)location.Y / _cellSize) - 1;
         int row = (int)Math.Round((float)location.X / _cellSize) - 1;
         
-        return new Point(column, row);
+        return new GridPosition(column, row);//to store the values as if there were in an array 2D, column must go first
     }
 
-    public Point IndexToPixel(Point location)
+    //THIS HAS NOT BEEN USED YET; NOT SURE IF IT IS WORKING AS INTENDED
+    public GridPosition IndexToPixel(Point location)
     {
         int rowInGrid = location.X + 1;// location.X = 0 -> 1
         int columnInGrid = location.Y + 1;// location.Y = 2 -> 3
@@ -34,15 +35,26 @@ public class GridConverter
         int row = rowInGrid * _cellSize;//96 -> first row
         int column = columnInGrid * _cellSize;// 384 -> third column
         
-        return new Point(row, column);
+        return new GridPosition(row, column);
     }
 
     //Return the range available for movement
-    public Point ConvertCollisionBounds(int x, int y)
+    public GridPosition ConvertCollisionBounds(int x, int y, int length)
     {
         int pixelX = x == -1 ? -1 : (x + 2) * _cellSize; //x is topright, to get the pixel boundary +2 to the grid position is needed (+1 for roombounds and +1 to blocker body size)
-        int pixelY = y == -1 ? -1 : y * _cellSize; //no addition to the right/down position as we need to account for the moving object body size (96pixels)
-        return new Point(pixelX, pixelY);
+        
+        Console.WriteLine("pixelX: " + pixelX);
+        Console.WriteLine("X: " + x);
+        
+        if (y == -1)
+        {
+            return new GridPosition(pixelX, y);
+        }
+        if (length > 1)
+        {
+            return new GridPosition(pixelX, y * _cellSize - (length - 1) * _cellSize);
+        }
+        return new GridPosition(pixelX, y * _cellSize);
     }
 }
 
